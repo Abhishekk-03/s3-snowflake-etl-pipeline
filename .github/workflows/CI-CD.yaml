@@ -27,7 +27,7 @@ jobs:
 
       # Run tests
       - name: Run Test Cases
-        run: pytest
+        run: python -m pytest
 
 
   deploying:
