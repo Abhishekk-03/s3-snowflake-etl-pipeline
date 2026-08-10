@@ -60,7 +60,7 @@ jobs:
       # Tag Docker Image
       - name: Tag Docker Image
         run: |
-          docker tag spark-etl:v1 \
+          docker tag spark-etl:v2 \
           093831816348.dkr.ecr.eu-north-1.amazonaws.com/etl-spark:v2
 
       # Push Docker Image
