@@ -5,7 +5,6 @@ from pyspark.sql import SparkSession
 spark = (
     SparkSession.builder
     .appName("S3_Write")
-    .master("local[*]")
     .config(
         "spark.jars.packages",
         "org.apache.hadoop:hadoop-aws:3.3.4"
