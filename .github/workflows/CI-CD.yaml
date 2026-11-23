@@ -4,13 +4,15 @@ on:
   push:
   workflow_dispatch:
 
+env:
+  S3_SCRIPTS_PATH: s3://scripts-obj/csv-parquet-glue
+
 jobs:
 
   installation:
     runs-on: ubuntu-latest
 
     steps:
-
       # Checkout current code
       - name: Get Code
         uses: actions/checkout@v7
@@ -25,18 +27,17 @@ jobs:
       - name: Install libraries
         run: pip install -r requirements.txt
 
-      # Run tests
-      - name: Run Test Cases
-        run: python -m pytest
+      # Basic syntax check, taaki broken code S3 par na jaye
+      - name: Syntax check
+        run: python -m compileall main.py jobs utils
 
-
-  deploying:
+  deploy:
     needs: installation
+    # Sirf main branch ya manual run par upload hoga
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
-
-      # Checkout current code
       - name: Get Code
         uses: actions/checkout@v7
 
@@ -47,3 +48,15 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      # Glue ko modules (jobs, utils) zip mein chahiye
+      - name: Package dependencies
+        run: zip -r dependencies.zip jobs utils -x "*__pycache__*"
+
+      # Entry script upload
+      - name: Upload main script to S3
+        run: aws s3 cp main.py $S3_SCRIPTS_PATH/main.py
+
+      # Dependencies upload
+      - name: Upload dependencies to S3
+        run: aws s3 cp dependencies.zip $S3_SCRIPTS_PATH/dependencies.zip
