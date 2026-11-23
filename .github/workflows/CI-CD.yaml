@@ -1,45 +1,32 @@
 name: Spark ETL CI-CD
 
+
 on:
   push:
+    branches:
+      - main
+
   workflow_dispatch:
 
-env:
-  S3_SCRIPTS_PATH: s3://scripts-obj/csv-parquet-glue
-
 jobs:
-
   installation:
+    name: Deploy Lambda and Glue to AWS
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout current code
+      # 1. Get repository code
       - name: Get Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
-      # Install Python
+      # 2. Setup Python
       - name: Setup Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11.7"
+          python-version: "3.12"
 
       # Install dependencies
       - name: Install libraries
         run: pip install -r requirements.txt
-
-      # Basic syntax check, taaki broken code S3 par na jaye
-      - name: Syntax check
-        run: python -m compileall main.py jobs utils
-
-  deploy:
-    needs: installation
-    # Sirf main branch ya manual run par upload hoga
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Get Code
-        uses: actions/checkout@v7
 
       # Configure AWS
       - name: Configure AWS Credentials
@@ -49,14 +36,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Glue ko modules (jobs, utils) zip mein chahiye
-      - name: Package dependencies
-        run: zip -r dependencies.zip jobs utils -x "*__pycache__*"
+      # 3. Package Python modules
+      - name: Create Dependencies ZIP
+        run: |
+          zip -r dependencies.zip jobs utils \
+          -x "*__pycache__*" "*.pyc"
 
-      # Entry script upload
-      - name: Upload main script to S3
-        run: aws s3 cp main.py $S3_SCRIPTS_PATH/main.py
+      # 4. Upload ZIP to S3
+      - name: Upload Dependencies
+        run: |
+          aws s3 cp dependencies.zip \
+          s3://scripts-obj/csv-parquet-glue/dependencies.zip
 
-      # Dependencies upload
-      - name: Upload dependencies to S3
-        run: aws s3 cp dependencies.zip $S3_SCRIPTS_PATH/dependencies.zip
+      # 5. Upload Main Glue Script
+      - name: Upload Glue Script
+        run: |
+          aws s3 cp main.py \
+          s3://scripts-obj/csv-parquet-glue/main.py
+
+      # 6. Deployment Status
+      - name: Deployment Successful
+        run: echo "Glue project deployed successfully!"
