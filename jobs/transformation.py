@@ -4,6 +4,8 @@ from utils.checkpoint import Updated_Customer, Updated_Category, Updated_Employe
 from pyspark.sql.types import IntegerType, StringType
 from pyspark.sql.functions import col, trim, when, initcap, to_date, row_number, lit
 from pyspark.sql.window import Window
+import json
+import boto3
 
 
 def check_missing_col(df,valid_columns):
@@ -181,3 +183,38 @@ def transform(df):
         raise Exception(f"Stop Execution due to mismatched data types: {mismatched_data_type}")
     
     return clean_df, rejected_df
+
+def create_load_tables(clean_df, rejected_df):
+
+    sales_fact = (clean_df.select(
+        "Order_Date",
+        "Delivery_Date",
+        "Customer_ID",
+        "Customer_Name",
+        "Employee_ID",
+        "Employee_Name",
+        "Product_ID",
+        "Product_Name",
+        "Category_ID",
+        "Category_Name",
+        "Quantity",
+        "Price",
+        "Sale").dropDuplicates()
+    )
+
+
+    sales_fact.write.mode("append").parquet("s3://my-csv-data-obj-2026/silver-layer-parquet/sales-fact-df")
+    rejected_df.write.mode("append").parquet("s3://my-csv-data-obj-2026/silver-layer-parquet/reject-df")
+
+
+CHECKPOINT_BUCKET = "checkpoint-obj"
+CHECKPOINT_KEY = "csv-checkpoint/csv-checkpoint.json"
+
+def update_checkpoint(store_key, unprocessed_files):
+
+    store_key.update(unprocessed_files)
+    boto3.client("s3").put_object(
+        Bucket=CHECKPOINT_BUCKET,
+        Key=CHECKPOINT_KEY,
+        Body=json.dumps(sorted(store_key), indent=4),
+    )
