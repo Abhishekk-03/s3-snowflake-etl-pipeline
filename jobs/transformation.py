@@ -206,7 +206,6 @@ def create_load_tables(clean_df, rejected_df):
     sales_fact.write.mode("append").parquet("s3://my-csv-data-obj-2026/silver-layer-parquet/sales-fact-df")
     rejected_df.write.mode("append").parquet("s3://my-csv-data-obj-2026/silver-layer-parquet/reject-df")
 
-
 CHECKPOINT_BUCKET = "checkpoint-obj"
 CHECKPOINT_KEY = "csv-checkpoint/csv-checkpoint.json"
 

@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 from utils.spark_session import spark
 
 DATA_BUCKET = "my-csv-data-obj-2026"
-DATA_PREFIX = "bronze-layer-csv/Sales-2026/"
+DATA_PREFIX = "bronze-layer-csv/sales-2026/"
 CHECKPOINT_BUCKET = "checkpoint-obj"
 CHECKPOINT_KEY = "csv-checkpoint/csv-checkpoint.json"
 
